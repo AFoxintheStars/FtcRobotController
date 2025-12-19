@@ -39,7 +39,7 @@ import com.qualcomm.robotcore.util.Range;
 
 
 @TeleOp(name="Vortex DECODE", group="TeleOp")
-@Disabled
+//@Disabled
 public class MentorCode extends LinearOpMode {
 
     // Hardware

@@ -9,28 +9,27 @@ import mechanisms.TestBenchIMU;
 
 @TeleOp
 public class IMUPractice extends OpMode {
-    TestBenchIMU bench = new TestBenchIMU();
+    TestBenchIMU testBenchIMU = new TestBenchIMU();
     double heading;
-
 
     @Override
     public void init() {
-        bench.init(hardwareMap);
+        testBenchIMU.init(hardwareMap);
     }
 
     @Override
     public void loop() {
-        heading = bench.getHeading(AngleUnit.DEGREES);
-        telemetry.addData("Heading", bench.getHeading(AngleUnit.DEGREES));
+        heading = testBenchIMU.getHeading(AngleUnit.DEGREES);
+        telemetry.addData("Heading", testBenchIMU.getHeading(AngleUnit.DEGREES));
 
         if (heading < 0.5 && heading > -0.5) {
-            bench.setMotor(0.0);
+            testBenchIMU.setMotor(0.0);
         }
         else if (heading > 0.5) {
-            bench.setMotor(0.5);
+            testBenchIMU.setMotor(0.5);
         }
         else {
-            bench.setMotor(-0.5);
+            testBenchIMU.setMotor(-0.5);
         }
     }
 }
