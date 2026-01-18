@@ -29,7 +29,6 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -40,7 +39,7 @@ import com.qualcomm.robotcore.util.Range;
 
 @TeleOp(name="Vortex DECODE", group="TeleOp")
 //@Disabled
-public class MentorCode extends LinearOpMode {
+public class VORTEXV1 extends LinearOpMode {
 
     // Hardware
     private DcMotor shooterLeft;
@@ -457,9 +456,9 @@ public class MentorCode extends LinearOpMode {
     private void turnTableSubsystem() {
         // Manual Control
         if (gamepad1.dpad_left || gamepad2.dpad_left) {
-            turnTableServo.setPower(1);
+            turnTableServo.setPower(-1.0);
         } else if (gamepad1.dpad_right || gamepad2.dpad_right) {
-            turnTableServo.setPower(-1);
+            turnTableServo.setPower(1.0);
         } else if (!isTurning) {
             turnTableServo.setPower(0);
         }

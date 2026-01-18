@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.examples;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import mechanisms.TestBenchServo;
+import mechanisms.tests.TestBenchServo;
 
 @TeleOp
+@Disabled
 public class ServoExample extends OpMode {
 
     TestBenchServo bench = new TestBenchServo();

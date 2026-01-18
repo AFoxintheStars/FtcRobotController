@@ -1,13 +1,15 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.examples;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-import mechanisms.TestBenchIMU;
+import mechanisms.tests.TestBenchIMU;
 
 @TeleOp
+@Disabled
 public class IMUPractice extends OpMode {
     TestBenchIMU testBenchIMU = new TestBenchIMU();
     double heading;

@@ -1,4 +1,4 @@
-package mechanisms;
+package mechanisms.tests;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;

@@ -1,4 +1,4 @@
-package mechanisms;
+package mechanisms.tests;
 
 import android.util.Size;
 

@@ -1,4 +1,4 @@
-package mechanisms;
+package mechanisms.tests;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;

@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.examples;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import mechanisms.RobotLocation;
+import mechanisms.tests.RobotLocation;
 
 @TeleOp
+@Disabled
 public class UseRobotLocation extends OpMode {
     RobotLocation robotLocation = new RobotLocation(0);
 

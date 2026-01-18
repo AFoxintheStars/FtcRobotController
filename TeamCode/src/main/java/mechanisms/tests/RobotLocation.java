@@ -1,4 +1,4 @@
-package mechanisms;
+package mechanisms.tests;
 
 public class RobotLocation {
     double angle;

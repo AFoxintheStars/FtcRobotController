@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.examples;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import mechanisms.TestBenchColor;
+import mechanisms.tests.TestBenchColor;
 
 @TeleOp
+@Disabled
 public class ColorSensorTest extends OpMode {
     TestBenchColor bench = new TestBenchColor();
     TestBenchColor.DetectedColor detectedColor;
