@@ -15,7 +15,6 @@ public class Shooter {
     private Servo angleServoLeft;
 
     //Right shooter
-
     private DcMotorEx flywheelRight;
     private Servo angleServoRight;
 
@@ -32,30 +31,7 @@ public class Shooter {
     private static final double MIN_RPM = 1800.0;
     private static final double MAX_RPM = 5200.0;
     private static final double IDLE_RPM = 0.0;
-    private double desiredRPM = DEFAULT_TARGET_RPM;
-
-    // === DISTANCE TO HOOD ANGLE SERVO POSITION (UNCHANGED) ===
-    // Distance (inches) → servo pos 0-1 (higher = steeper angle)
-    private static final double[][] DISTANCE_TO_ANGLE_TABLE = {
-            { 12.0, 0.10 },   // Close: lower angle
-            { 24.0, 0.11 },
-            { 36.0, 0.12 },
-            { 48.0, 0.13 },
-            { 60.0, 0.14 },   // Farther: higher angle
-            { 72.0, 0.15 }
-    };
-
-    // === DISTANCE TO TARGET RPM ===
-    // Higher distance usually needs higher RPM, but higher angle reduces required RPM slightly
-    private static final double[][] DISTANCE_TO_RPM_TABLE = {
-            { 12.0, 2200.0 },  // Close: lower speed
-            { 24.0, 2800.0 },
-            { 36.0, 3400.0 },
-            { 48.0, 3900.0 },
-            { 60.0, 4400.0 },
-            { 72.0, 4800.0 }   // Far: higher speed
-    };
-
+    public double desiredRPM = DEFAULT_TARGET_RPM;
     private double targetRPMLeft = IDLE_RPM;
     private double targetRPMRight = IDLE_RPM;
     private boolean enabled = false;
@@ -92,14 +68,6 @@ public class Shooter {
     }
 
     /**
-     * Set target RPM directly
-     */
-    public void setTargetRPM(double rpm) {
-        targetRPMLeft = targetRPMRight = Math.max(0, Math.min(rpm, MAX_RPM));
-        enabled = targetRPMLeft > 0;
-    }
-
-    /**
      * Aim both hoods and set flywheels using physics solver
      * @param distanceMeters horizontal distance to target (from AprilTag)
      */
@@ -120,52 +88,6 @@ public class Shooter {
     public void aimFromDistanceInches(double distanceInches) {
         aimFromDistanceMeters(distanceInches / 39.3701); // inches → meters
     }
-
-    /**
-     * Calculate & set angle servo from distance (inches) from AprilTag.
-     */
-    private double interpolate(double distance, double[][] table) {
-        if (distance <= table[0][0]) return table[0][1];
-        int len = table.length;
-        if (distance >= table[len-1][0]) return table[len-1][1];
-
-        for (int i = 0; i < len - 1; i++) {
-            double d1 = table[i][0];
-            double d2 = table [i+1][0];
-            if (distance >= d1 && distance <= d2) {
-                double v1 = table[i][1];
-                double v2 = table[i+1][1];
-                double t = (distance - d1) / (d2 - d1);
-                return v1 + t * (v2 - v1);
-            }
-        }
-        return table[0][1];
-    }
-
-//    public void setAngleFromDistance(double distanceInches) {
-//        if (distanceInches <= DISTANCE_TO_ANGLE_TABLE[0][0]) {
-//            angleServo.setPosition(DISTANCE_TO_ANGLE_TABLE[0][1]);
-//            return;
-//        }
-//        int len = DISTANCE_TO_ANGLE_TABLE.length;
-//        if (distanceInches >= DISTANCE_TO_ANGLE_TABLE[len - 1][0]) {
-//            angleServo.setPosition(DISTANCE_TO_ANGLE_TABLE[len - 1][1]);
-//            return;
-//        }
-//
-//        // Linear interpolation
-//        for (int i = 0; i < len - 1; i++) {
-//            double d1 = DISTANCE_TO_ANGLE_TABLE[i][0];
-//            double d2 = DISTANCE_TO_ANGLE_TABLE[i + 1][0];
-//            if (distanceInches >= d1 && distanceInches <= d2) {
-//                double a1 = DISTANCE_TO_ANGLE_TABLE[i][1];
-//                double a2 = DISTANCE_TO_ANGLE_TABLE[i + 1][1];
-//                double t = (distanceInches - d1) / (d2 - d1);
-//                angleServo.setPosition(a1 + t * (a2 - a1));
-//                return;
-//            }
-//        }
-//    }
 
     /**
      * Update flywheel velocity in loop.

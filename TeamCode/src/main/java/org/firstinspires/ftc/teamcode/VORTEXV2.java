@@ -75,60 +75,26 @@ public class VORTEXV2 extends OpMode {
 
         telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
 
-//        for (AprilTagDetection detection : detections) {
-//            if (detection.metadata != null) {
-//                telemetry.addLine(String.format("\n==== Tag ID %d (%s)", detection.id, detection.metadata.name));
-//
-//                // Tag relative to camera (ftcPose)
-//                if (detection.ftcPose != null) {
-//                    telemetry.addLine(String.format("Tag XYZ (cam): %6.1f %6.1f %6.1f in",
-//                            detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-//                    telemetry.addLine(String.format("Tag PRY: %6.1f %6.1f %6.1f deg",
-//                            detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-//                    telemetry.addLine(String.format("Range/Bearing/Elev: %6.1f in, %6.1f°, %6.1f°",
-//                            detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-//                }
-//
-//                // Robot global pose relative to field origin (requires setCameraPose)
-//                if (detection.robotPose != null) {
-//                    telemetry.addLine(String.format("Robot XYZ (field): %6.1f %6.1f %6.1f in",
-//                            detection.robotPose.getPosition().x,
-//                            detection.robotPose.getPosition().y,
-//                            detection.robotPose.getPosition().z));
-//                    telemetry.addLine(String.format("Robot Yaw/Pitch/Roll: %6.1f %6.1f %6.1f deg",
-//                            detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES),
-//                            detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),
-//                            detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES)));
-//                }
-//            } else {
-//                telemetry.addLine(String.format("\n==== Unknown Tag ID %d", detection.id));
-//            }
-//        }
-
         // ===== SHOOTER & SERVO =====
-
         double distanceInches = 0;
         boolean hasTarget = false;
 
         for (AprilTagDetection detection : aprilTagVision.getDetections()) {
             if (detection.metadata != null && detection.ftcPose != null) {
-                distanceInches = detection.ftcPose.range; // or use robotPose if needed
+                distanceInches = detection.ftcPose.range;
                 hasTarget = true;
                 break;
             }
         }
 
         if (gamepad1.x && hasTarget) {
-            shooter.aimFromDistanceMeters(distanceInches);  // sets angle + RPM for both
+            shooter.aimFromDistanceInches(distanceInches);
         } else {
             shooter.stop();
         }
 
-        Position robotPos = aprilTagVision.getRobotPosition();
-        if (robotPos != null) {
-            telemetry.addData("Robot Field Pos (first valid)", String.format("%.1f, %.1f, %.1f in",
-                    robotPos.x, robotPos.y, robotPos.z));
-        }
+        if (gamepad1.dpad_up)    shooter.setDesiredRPM(shooter.desiredRPM + 100);
+        if (gamepad1.dpad_down)     shooter.setDesiredRPM(shooter.desiredRPM - 100);
 
         // ===== TELEMETRY =====
 

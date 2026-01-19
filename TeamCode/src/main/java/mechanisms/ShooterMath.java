@@ -14,9 +14,10 @@ public final class ShooterMath {
     // Start with ~0.00085 and tune by shooting at known distances
     public static final double RPM_TO_VELOCITY_COEFF = 0.00085;
 
-    // Servo mapping: physical angle 0° → servo 0.0, 80° → servo 1.0 (after limits programming)
+    public static final double SERVO_MIN_POSITION = 0.00;
+    public static final double SERVO_MAX_POSITION = 0.15;
     public static final double SERVO_MIN_ANGLE_DEG = 0.0;
-    public static final double SERVO_MAX_ANGLE_DEG = 20.0;
+    public static final double SERVO_MAX_ANGLE_DEG = 80.0;
 
     private ShooterMath() {} // static utility
 
@@ -68,18 +69,16 @@ public final class ShooterMath {
             double deltaZMeters) {
 
         if (rangeMeters < 0.1) {
-            return Math.toRadians(45); // too close → fallback
+            return Math.toRadians(45);
         }
 
         double low = Math.toRadians(10.0);
         double high = Math.toRadians(80.0);
 
-        // 35 iterations is more than enough for double precision
         for (int i = 0; i < 35; i++) {
             double mid = (low + high) / 2.0;
             double error = verticalError(rangeMeters, velocityMps, mid, deltaZMeters);
 
-            // We want error ≈ 0
             if (error > 0) {
                 high = mid;  // too high → reduce angle
             } else {
@@ -95,8 +94,13 @@ public final class ShooterMath {
      */
     public static double angleRadToServoPosition(double angleRad) {
         double angleDeg = Math.toDegrees(angleRad);
-        // Clamp to servo physical limits
+
         angleDeg = Math.max(SERVO_MIN_ANGLE_DEG, Math.min(SERVO_MAX_ANGLE_DEG, angleDeg));
-        return (angleDeg - SERVO_MIN_ANGLE_DEG) / (SERVO_MAX_ANGLE_DEG - SERVO_MIN_ANGLE_DEG);
+
+        double position = (angleDeg - SERVO_MIN_ANGLE_DEG) / (SERVO_MAX_ANGLE_DEG - SERVO_MIN_ANGLE_DEG);
+
+        position = Math.max(SERVO_MIN_POSITION, Math.min(SERVO_MAX_POSITION, position));
+
+        return position;
     }
 }
