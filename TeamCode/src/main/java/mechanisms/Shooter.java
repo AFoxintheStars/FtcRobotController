@@ -27,10 +27,12 @@ public class Shooter {
     private static final double SHOOTER_P = 10.0;
     private static final double SHOOTER_I = 0.5;
     private static final double SHOOTER_D = 0.0;
-    private static final double SHOOTER_F = 12.0; // Key for consistent RPM across battery levels
-
-    private static final double MAX_RPM = 5500.0; // Safe limit
+    private static final double SHOOTER_F = 12.0;
+    private static final double DEFAULT_TARGET_RPM = 3800.0;
+    private static final double MIN_RPM = 1800.0;
+    private static final double MAX_RPM = 5200.0;
     private static final double IDLE_RPM = 0.0;
+    private double desiredRPM = DEFAULT_TARGET_RPM;
 
     // === DISTANCE TO HOOD ANGLE SERVO POSITION (UNCHANGED) ===
     // Distance (inches) → servo pos 0-1 (higher = steeper angle)
@@ -43,7 +45,7 @@ public class Shooter {
             { 72.0, 0.15 }
     };
 
-    // === DISTANCE TO TARGET RPM (TUNE EMPIRICALLY!) ===
+    // === DISTANCE TO TARGET RPM ===
     // Higher distance usually needs higher RPM, but higher angle reduces required RPM slightly
     private static final double[][] DISTANCE_TO_RPM_TABLE = {
             { 12.0, 2200.0 },  // Close: lower speed
@@ -85,6 +87,10 @@ public class Shooter {
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
     }
 
+    public void setDesiredRPM(double rpm) {
+        desiredRPM = Math.max(MIN_RPM, Math.min(MAX_RPM, rpm));
+    }
+
     /**
      * Set target RPM directly
      */
@@ -93,14 +99,26 @@ public class Shooter {
         enabled = targetRPMLeft > 0;
     }
 
-    public void aimFromDistance(double distanceInches) {
-        double servoPos = interpolate(distanceInches, DISTANCE_TO_ANGLE_TABLE);
-        angleServoRight.setPosition(1.0 - servoPos);
-        angleServoLeft.setPosition(servoPos);
+    /**
+     * Aim both hoods and set flywheels using physics solver
+     * @param distanceMeters horizontal distance to target (from AprilTag)
+     */
+    public void aimFromDistanceMeters(double distanceMeters) {
+        double velocity = ShooterMath.rpmToVelocity(desiredRPM);
+        double deltaZ = ShooterMath.TARGET_HEIGHT_M - ShooterMath.SHOOTER_HEIGHT_M;
 
-        double rpm = interpolate(distanceInches, DISTANCE_TO_RPM_TABLE);
-        targetRPMLeft = targetRPMRight = rpm;
+        double angleRad = ShooterMath.solveLaunchAngleRad(distanceMeters, velocity, deltaZ);
+        double servoPosLeft = ShooterMath.angleRadToServoPosition(angleRad);
+
+        angleServoLeft.setPosition(servoPosLeft);
+        angleServoRight.setPosition(1.0 - servoPosLeft); // inverted
+
+        targetRPMLeft = targetRPMRight = desiredRPM;
         enabled = true;
+    }
+
+    public void aimFromDistanceInches(double distanceInches) {
+        aimFromDistanceMeters(distanceInches / 39.3701); // inches → meters
     }
 
     /**
@@ -204,13 +222,13 @@ public class Shooter {
     // Telemetry helpers
     public void addTelemetry(Telemetry telemetry) {
         telemetry.addLine("Shooter Status:");
-        telemetry.addData("Target RPM", "%.0f", targetRPMLeft);
+        telemetry.addData("Target RPM", "%.0f", desiredRPM);
         telemetry.addData("Left RPM", "%.0f", getCurrentRPMLeft());
         telemetry.addData("Right RPM", "%.0f", getCurrentRPMRight());
         telemetry.addData("At Target?", isAtTarget() ? "YES" : "NO");
         telemetry.addLine("Hood Servos:");
         telemetry.addData("Left Pos", "%.3f", angleServoLeft.getPosition());
         telemetry.addData("Right Pos", "%.3f", angleServoRight.getPosition());
-        telemetry.addData("Est. Angle", "%.1f°", getEstimatedAngleDegrees());
+        telemetry.addData("Est. Launch Angle", "%.1f°", getEstimatedAngleDegrees());
     }
 }

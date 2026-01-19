@@ -119,7 +119,7 @@ public class VORTEXV2 extends OpMode {
         }
 
         if (gamepad1.x && hasTarget) {
-            shooter.aimFromDistance(distanceInches);  // sets angle + RPM for both
+            shooter.aimFromDistanceMeters(distanceInches);  // sets angle + RPM for both
         } else {
             shooter.stop();
         }

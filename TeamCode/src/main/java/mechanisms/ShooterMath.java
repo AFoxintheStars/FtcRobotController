@@ -1,0 +1,102 @@
+package mechanisms;
+
+public final class ShooterMath {
+
+    // ================== PHYSICAL CONSTANTS ==================
+    public static final double GRAVITY = 9.81;
+
+    public static final double SHOOTER_HEIGHT_M = 0.35;   // Example: ~12 inches (measure exit point!)
+    public static final double TARGET_HEIGHT_M = 0.45;    // Example: goal lip height (measure!)
+
+    // RPM to exit velocity conversion
+    // This is your biggest tuning constant!
+    // Typical range for hooded shooters with 3–5" wheels: 0.0006 to 0.0012 m/s per RPM
+    // Start with ~0.00085 and tune by shooting at known distances
+    public static final double RPM_TO_VELOCITY_COEFF = 0.00085;
+
+    // Servo mapping: physical angle 0° → servo 0.0, 80° → servo 1.0 (after limits programming)
+    public static final double SERVO_MIN_ANGLE_DEG = 0.0;
+    public static final double SERVO_MAX_ANGLE_DEG = 20.0;
+
+    private ShooterMath() {} // static utility
+
+    /**
+     * Convert flywheel RPM → muzzle velocity (m/s)
+     */
+    public static double rpmToVelocity(double rpm) {
+        return rpm * RPM_TO_VELOCITY_COEFF;
+    }
+
+    /**
+     * Horizontal distance from robot to target (m)
+     */
+    public static double computeRangeMeters(double fieldXMeters, double fieldYMeters) {
+        return Math.hypot(fieldXMeters, fieldYMeters);
+    }
+
+    /**
+     * Vertical error for a given launch angle (radians)
+     * Positive error = overshoots height, negative = undershoots
+     */
+    private static double verticalError(
+            double rangeMeters,
+            double velocityMps,
+            double launchAngleRad,
+            double deltaZMeters) {
+
+        if (Math.abs(Math.cos(launchAngleRad)) < 1e-6) {
+            return Double.POSITIVE_INFINITY;
+        }
+
+        double term1 = rangeMeters * Math.tan(launchAngleRad);
+        double term2 = (GRAVITY * rangeMeters * rangeMeters)
+                / (2.0 * velocityMps * velocityMps * Math.pow(Math.cos(launchAngleRad), 2));
+
+        return term1 - term2 - deltaZMeters;
+    }
+
+    /**
+     * Numerically solve for best launch angle (radians) using binary search / bisection
+     * @param rangeMeters     horizontal distance
+     * @param velocityMps     muzzle velocity
+     * @param deltaZMeters    target height - shooter height
+     * @return launch angle in radians (between ~10° and 80°)
+     */
+    public static double solveLaunchAngleRad(
+            double rangeMeters,
+            double velocityMps,
+            double deltaZMeters) {
+
+        if (rangeMeters < 0.1) {
+            return Math.toRadians(45); // too close → fallback
+        }
+
+        double low = Math.toRadians(10.0);
+        double high = Math.toRadians(80.0);
+
+        // 35 iterations is more than enough for double precision
+        for (int i = 0; i < 35; i++) {
+            double mid = (low + high) / 2.0;
+            double error = verticalError(rangeMeters, velocityMps, mid, deltaZMeters);
+
+            // We want error ≈ 0
+            if (error > 0) {
+                high = mid;  // too high → reduce angle
+            } else {
+                low = mid;   // too low → increase angle
+            }
+        }
+
+        return (low + high) / 2.0;
+    }
+
+    /**
+     * Convert solved launch angle (rad) → servo position [0.0 .. 1.0]
+     */
+    public static double angleRadToServoPosition(double angleRad) {
+        double angleDeg = Math.toDegrees(angleRad);
+        // Clamp to servo physical limits
+        angleDeg = Math.max(SERVO_MIN_ANGLE_DEG, Math.min(SERVO_MAX_ANGLE_DEG, angleDeg));
+        return (angleDeg - SERVO_MIN_ANGLE_DEG) / (SERVO_MAX_ANGLE_DEG - SERVO_MIN_ANGLE_DEG);
+    }
+}
