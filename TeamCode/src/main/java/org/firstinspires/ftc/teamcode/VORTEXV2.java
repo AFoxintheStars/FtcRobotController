@@ -10,8 +10,6 @@ import mechanisms.Intake;
 import mechanisms.Shooter;
 import mechanisms.Turntable;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.List;
@@ -76,25 +74,22 @@ public class VORTEXV2 extends OpMode {
         telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
 
         // ===== SHOOTER & SERVO =====
-        double distanceInches = 0;
+        double distanceMeters = 0;
         boolean hasTarget = false;
 
         for (AprilTagDetection detection : aprilTagVision.getDetections()) {
             if (detection.metadata != null && detection.ftcPose != null) {
-                distanceInches = detection.ftcPose.range;
+                distanceMeters = detection.ftcPose.range;
                 hasTarget = true;
                 break;
             }
         }
 
         if (gamepad1.x && hasTarget) {
-            shooter.aimFromDistanceInches(distanceInches);
+            shooter.aimFromDistanceMeters(distanceMeters);
         } else {
             shooter.stop();
         }
-
-        if (gamepad1.dpad_up)    shooter.setDesiredRPM(shooter.desiredRPM + 100);
-        if (gamepad1.dpad_down)     shooter.setDesiredRPM(shooter.desiredRPM - 100);
 
         // ===== TELEMETRY =====
 
@@ -102,9 +97,7 @@ public class VORTEXV2 extends OpMode {
         shooter.update();
 
         shooter.addTelemetry(telemetry);
-        telemetry.addData("Conveyor Velocity", conveyor.getVelocity());
-        telemetry.addData("Conveyor Target Velocity", conveyor.getTargetVelocity());
-        telemetry.addData("Intake Current (A)", intake.getCurrentDraw());
+        telemetry.addData("Distance in", "%.2f", distanceMeters);
         telemetry.addData("Angle", turntable.getCurrentAngle());
         telemetry.addData("Target", turntable.getTargetAngle());
         telemetry.addData("At Target", turntable.atTarget());

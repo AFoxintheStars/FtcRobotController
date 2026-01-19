@@ -21,7 +21,7 @@ public class AprilTagVision {
 
     // Adjustable: Camera position relative to robot center (inches)
     // Example: Camera 6" forward, 4" left, 8" up from robot center
-    private final Position cameraPosition = new Position(DistanceUnit.INCH,
+    private final Position cameraPosition = new Position(DistanceUnit.METER,
             0,  // x (right/left; positive right)
             7.5,   // y (forward/back; positive forward)
             15.0,   // z (up/down; positive up)
