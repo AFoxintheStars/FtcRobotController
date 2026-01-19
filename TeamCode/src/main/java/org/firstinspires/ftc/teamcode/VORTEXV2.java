@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import mechanisms.AprilTagAimer;
 import mechanisms.AprilTagVision;
 import mechanisms.Conveyor;
 import mechanisms.DriveTrain;
@@ -22,6 +23,8 @@ public class VORTEXV2 extends OpMode {
     Turntable turntable = new Turntable();
     AprilTagVision aprilTagVision = new AprilTagVision();
     Shooter shooter = new Shooter();
+    AprilTagAimer aprilTagAimer = new AprilTagAimer();
+    private boolean lastBState = false;
 
     @Override
     public void init() {
@@ -31,6 +34,7 @@ public class VORTEXV2 extends OpMode {
         turntable.init(hardwareMap);
         aprilTagVision.init(hardwareMap);
         shooter.init(hardwareMap);
+        aprilTagAimer.init(hardwareMap, telemetry, driveTrain, aprilTagVision);
 
         telemetry.addLine("Vortex Initialized!");
     }
@@ -42,6 +46,21 @@ public class VORTEXV2 extends OpMode {
         double turn = gamepad1.right_stick_x;
 
         driveTrain.teleopDrive(forward, turn);
+
+        // ===== AIMING TOGGLE =====
+        boolean currentB = gamepad1.b;
+        if (currentB && !lastBState) {  // rising edge → toggle
+            aprilTagAimer.toggleAiming();
+        }
+        lastBState = currentB;
+
+        // ===== Aiming update (takes over turning when active) =====
+        aprilTagAimer.update();
+
+        // Only apply manual turning if NOT aiming
+        if (!aprilTagAimer.aimingActive) {
+            driveTrain.teleopDrive(forward, turn);
+        }
 
         // ===== INTAKE =====
         intake.controlIntake(gamepad1.right_bumper, gamepad1.left_bumper);
@@ -79,14 +98,14 @@ public class VORTEXV2 extends OpMode {
 
         for (AprilTagDetection detection : aprilTagVision.getDetections()) {
             if (detection.metadata != null && detection.ftcPose != null) {
-                distanceMeters = detection.ftcPose.range;
+                distanceMeters = detection.ftcPose.range * 0.0254;
                 hasTarget = true;
                 break;
             }
         }
 
         if (gamepad1.x && hasTarget) {
-            shooter.aimFromDistanceMeters(distanceMeters);
+            shooter.aimFromDistanceInches(distanceMeters);
         } else {
             shooter.stop();
         }
@@ -97,6 +116,10 @@ public class VORTEXV2 extends OpMode {
         shooter.update();
 
         shooter.addTelemetry(telemetry);
+        telemetry.addData("Aimer Active?", aprilTagAimer.aimingActive ? "YES (B pressed)" : "NO");
+        if (aprilTagAimer.aimingActive && aprilTagAimer.isFacingTag()) {
+            telemetry.addLine("→ Robot is facing the AprilTag!");
+        }
         telemetry.addData("Distance in", "%.2f", distanceMeters);
         telemetry.addData("Angle", turntable.getCurrentAngle());
         telemetry.addData("Target", turntable.getTargetAngle());

@@ -14,7 +14,7 @@ public class Shooter {
     private DcMotorEx flywheelLeft;
     private Servo angleServoLeft;
 
-    //Right shooter
+    // Right shooter
     private DcMotorEx flywheelRight;
     private Servo angleServoRight;
 
@@ -22,19 +22,40 @@ public class Shooter {
     private static final double TICKS_PER_REV = 28.0;
 
     // PIDF coefficients
-    // F (feedforward) is critical for voltage-independent velocity
     private static final double SHOOTER_P = 10.0;
     private static final double SHOOTER_I = 0.5;
     private static final double SHOOTER_D = 0.0;
     private static final double SHOOTER_F = 12.0;
-    private static final double MIN_RPM = 1800.0;
-    private static final double MAX_RPM = 5200.0;
+
+    private static final double MIN_RPM = 1900.0;
+    private static final double MAX_RPM = 2200.0;
     private static final double IDLE_RPM = 0.0;
+
     private double targetRPMLeft = IDLE_RPM;
     private double targetRPMRight = IDLE_RPM;
-    private static final double FIXED_LAUNCH_ANGLE_DEG = 45.0;
-    private static final double FIXED_LAUNCH_ANGLE_RAD = Math.toRadians(FIXED_LAUNCH_ANGLE_DEG);
     private boolean enabled = false;
+
+    // === DISTANCE TO HOOD ANGLE SERVO POSITION (inches → position 0-1) ===
+    // Higher distance → higher (steeper) hood angle
+    private static final double[][] DISTANCE_TO_ANGLE_TABLE = {
+            { 12.0, 0.00 },   // Very close: flattest
+            { 24.0, 0.01 },
+            { 36.0, 0.02 },
+            { 48.0, 0.03 },
+            { 60.0, 0.04 },
+            { 72.0, 0.05 }    // Farthest: steepest (max safe)
+    };
+
+    // === DISTANCE TO TARGET RPM (inches → RPM) ===
+    // Higher distance → higher RPM
+    private static final double[][] DISTANCE_TO_RPM_TABLE = {
+            { 12.0, 1900.0 }, // Close: lower speed
+            { 24.0, 1950.0 },
+            { 36.0, 2000.0 },
+            { 48.0, 2050.0 },
+            { 60.0, 2100.0 },
+            { 72.0, 2200.0 }  // Far: max speed
+    };
 
     public void init(HardwareMap hwMap) {
         flywheelLeft = hwMap.get(DcMotorEx.class, "shooter_left");
@@ -43,63 +64,63 @@ public class Shooter {
         flywheelRight = hwMap.get(DcMotorEx.class, "shooter_right");
         angleServoRight = hwMap.get(Servo.class, "shooter_right_angle_servo");
 
-        setupFlywheel(flywheelLeft);
-        setupFlywheel(flywheelRight);
+        setupFlywheel(flywheelLeft, true);  // reversed
+        setupFlywheel(flywheelRight, false);
 
-        // Starting Servo Position
-        angleServoLeft.setPosition(0);
+        // Starting Servo Position (lowest hood)
+        angleServoLeft.setPosition(0.0);
         angleServoRight.setPosition(1.0);
     }
 
-    private void setupFlywheel(DcMotorEx flywheel) {
-        flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
-        flywheelLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+    private void setupFlywheel(DcMotorEx flywheel, boolean reversed) {
+        flywheel.setDirection(reversed ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
         flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flywheel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        // Set built-in PIDF for velocity control
         PIDFCoefficients pidf = new PIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidf);
     }
 
     /**
-     * Aim both hoods and set flywheels using physics solver
-     * @param distanceMeters horizontal distance to target (from AprilTag)
+     * Aim using distance tables (inches)
      */
-    public void aimFromDistanceMeters(double distanceMeters) {
-        double deltaZ = ShooterMath.TARGET_HEIGHT_M - ShooterMath.SHOOTER_HEIGHT_M;
-
-        double requiredVelocity = ShooterMath.solveVelocityMps(
-                distanceMeters,
-                FIXED_LAUNCH_ANGLE_RAD,
-                deltaZ
-        );
-
-        if (Double.isNaN(requiredVelocity)) {
-            stop();
-            return;
-        }
-
-        // Convert to RPM and clamp safely
-        double requiredRPM = ShooterMath.velocityToRpm(requiredVelocity);
-        requiredRPM = Math.max(MIN_RPM, Math.min(MAX_RPM, requiredRPM));
-
-        // *** THIS IS THE FIX *** — actually use the calculated RPM!
-        targetRPMLeft = targetRPMRight = requiredRPM;
-        enabled = true;
-
-        // Small hood adjustment based on RPM (higher RPM → flatter hood)
-        double hoodAdjustment = (requiredRPM - MIN_RPM) / (MAX_RPM - MIN_RPM) * 0.05;
-
-        double servoPosLeft = hoodAdjustment;
+    public void aimFromDistanceInches(double distanceInches) {
+        // Hood position from table
+        double servoPosLeft = interpolate(distanceInches, DISTANCE_TO_ANGLE_TABLE);
 
         angleServoLeft.setPosition(servoPosLeft);
-        angleServoRight.setPosition(1.0 - servoPosLeft);
+        angleServoRight.setPosition(1.0 - servoPosLeft); // inverted
+
+        // RPM from table
+        double rpm = interpolate(distanceInches, DISTANCE_TO_RPM_TABLE);
+        rpm = Math.max(MIN_RPM, Math.min(MAX_RPM, rpm));
+
+        targetRPMLeft = targetRPMRight = rpm;
+        enabled = true;
+    }
+
+    // Linear interpolation helper (used for both tables)
+    private double interpolate(double distance, double[][] table) {
+        if (distance <= table[0][0]) return table[0][1];
+        int len = table.length;
+        if (distance >= table[len - 1][0]) return table[len - 1][1];
+
+        for (int i = 0; i < len - 1; i++) {
+            double d1 = table[i][0];
+            double d2 = table[i + 1][0];
+            if (distance >= d1 && distance <= d2) {
+                double v1 = table[i][1];
+                double v2 = table[i + 1][1];
+                double t = (distance - d1) / (d2 - d1);
+                return v1 + t * (v2 - v1);
+            }
+        }
+        return table[0][1]; // fallback
     }
 
     /**
-     * Update flywheel velocity in loop.
+     * Update flywheel velocity every loop
      */
     public void update() {
         double ticksPerSec = rpmToTicksPerSec(targetRPMLeft);
@@ -121,7 +142,7 @@ public class Shooter {
     }
 
     public boolean isAtTarget() {
-        double tolerance = 100.0; // RPM tolerance
+        double tolerance = 100.0;
         return Math.abs(getCurrentRPMLeft() - targetRPMLeft) < tolerance &&
                 Math.abs(getCurrentRPMRight() - targetRPMRight) < tolerance;
     }
@@ -131,14 +152,14 @@ public class Shooter {
         targetRPMLeft = targetRPMRight = IDLE_RPM;
         flywheelLeft.setVelocity(0);
         flywheelRight.setVelocity(0);
-        angleServoLeft.setPosition(0);
+        angleServoLeft.setPosition(0.0);
         angleServoRight.setPosition(1.0);
     }
 
-    // Physical angle estimation
+    // Physical angle estimation (for telemetry)
     public double getEstimatedAngleDegrees() {
         double pos = angleServoLeft.getPosition();
-        return 0.0 + pos * 80.0;
+        return pos * 5.0; // since your max is ~5°
     }
 
     // Helpers
@@ -150,11 +171,12 @@ public class Shooter {
         return (ticksPerSec / TICKS_PER_REV) * 60.0;
     }
 
-    // Telemetry helpers
+    // Telemetry
     public void addTelemetry(Telemetry telemetry) {
         telemetry.addLine("Shooter Status:");
-        telemetry.addData("Left RPM", "%.0f", getCurrentRPMLeft());
-        telemetry.addData("Right RPM", "%.0f", getCurrentRPMRight());
+        telemetry.addData("Target RPM", "%.0f", targetRPMLeft);
+        telemetry.addData("Left Current RPM", "%.0f", getCurrentRPMLeft());
+        telemetry.addData("Right Current RPM", "%.0f", getCurrentRPMRight());
         telemetry.addData("At Target?", isAtTarget() ? "YES" : "NO");
         telemetry.addLine("Hood Servos:");
         telemetry.addData("Left Pos", "%.3f", angleServoLeft.getPosition());
