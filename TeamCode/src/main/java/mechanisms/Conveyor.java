@@ -9,12 +9,12 @@ public class Conveyor {
     private DcMotorEx conveyorMotor;
 
     // ===== MECHANICAL CONSTANTS =====
-    private static final double GEAR_RATIO = 20.0; // 20:1 reduction
+    private static final double GEAR_RATIO = 20.0;
     private static final double TICKS_PER_REV = 560;
     // Change if using a different motor
 
     // ===== CONVEYOR SPEED SETTINGS =====
-    private static final double CONVEYOR_RPM = 90.0; // output shaft RPM
+    private static final double CONVEYOR_RPM = 90.0;
     private static final double MOTOR_RPM = CONVEYOR_RPM * GEAR_RATIO;
 
     private static final double TARGET_TICKS_PER_SEC =
@@ -45,13 +45,4 @@ public class Conveyor {
         conveyorMotor.setVelocity(0);
     }
 
-    // ===== TELEMETRY =====
-
-    public double getVelocity() {
-        return conveyorMotor.getVelocity();
-    }
-
-    public double getTargetVelocity() {
-        return TARGET_TICKS_PER_SEC;
-    }
 }

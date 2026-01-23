@@ -9,7 +9,7 @@ public class Intake {
     private DcMotorEx intakeMotor;
 
     // ==== INTAKE POWER SETTINGS =====
-    private static final double INTAKE_POWER = 0.85;
+    private static final double INTAKE_POWER = 1.0;
     private static final double OUTTAKE_POWER = -0.75;
     private static final double IDLE_POWER = 0.0;
 

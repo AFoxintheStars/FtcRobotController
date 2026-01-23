@@ -27,34 +27,40 @@ public class Shooter {
     private static final double SHOOTER_D = 0.0;
     private static final double SHOOTER_F = 12.0;
 
-    private static final double MIN_RPM = 1900.0;
-    private static final double MAX_RPM = 2200.0;
+    private static final double MIN_RPM = 1000.0;
+    private static final double MAX_RPM = 3000.0;
     private static final double IDLE_RPM = 0.0;
 
     private double targetRPMLeft = IDLE_RPM;
     private double targetRPMRight = IDLE_RPM;
     private boolean enabled = false;
 
-    // === DISTANCE TO HOOD ANGLE SERVO POSITION (inches → position 0-1) ===
-    // Higher distance → higher (steeper) hood angle
+    // === DISTANCE TO HOOD ANGLE SERVO POSITION
     private static final double[][] DISTANCE_TO_ANGLE_TABLE = {
-            { 12.0, 0.00 },   // Very close: flattest
+            { 12.0, 0.00 },
             { 24.0, 0.01 },
             { 36.0, 0.02 },
             { 48.0, 0.03 },
             { 60.0, 0.04 },
-            { 72.0, 0.05 }    // Farthest: steepest (max safe)
+            { 72.0, 0.05 },
+            { 96.0, 0.05 },
+            { 120.0, 0.05 }
     };
 
-    // === DISTANCE TO TARGET RPM (inches → RPM) ===
-    // Higher distance → higher RPM
+    // === DISTANCE TO TARGET RPM
     private static final double[][] DISTANCE_TO_RPM_TABLE = {
-            { 12.0, 1900.0 }, // Close: lower speed
-            { 24.0, 1950.0 },
-            { 36.0, 2000.0 },
-            { 48.0, 2050.0 },
-            { 60.0, 2100.0 },
-            { 72.0, 2200.0 }  // Far: max speed
+            { 30.0, 1650.0 },
+            { 40.0, 1700.0 },
+            { 50.0, 1750.0 },
+            { 60.0, 1800.0 },
+            { 70.0, 1850.0 },
+            { 80.0, 1900.0 },
+            { 90.0, 1950.0 },
+            { 100.0, 2000.0 },
+            { 110.0, 2050.0 },
+            { 120.0, 2100.0 },
+            { 125.0, 2150.0 },
+            { 130.0, 2200.0 }
     };
 
     public void init(HardwareMap hwMap) {
@@ -64,7 +70,7 @@ public class Shooter {
         flywheelRight = hwMap.get(DcMotorEx.class, "shooter_right");
         angleServoRight = hwMap.get(Servo.class, "shooter_right_angle_servo");
 
-        setupFlywheel(flywheelLeft, true);  // reversed
+        setupFlywheel(flywheelLeft, true);
         setupFlywheel(flywheelRight, false);
 
         // Starting Servo Position (lowest hood)
@@ -86,13 +92,11 @@ public class Shooter {
      * Aim using distance tables (inches)
      */
     public void aimFromDistanceInches(double distanceInches) {
-        // Hood position from table
         double servoPosLeft = interpolate(distanceInches, DISTANCE_TO_ANGLE_TABLE);
 
         angleServoLeft.setPosition(servoPosLeft);
         angleServoRight.setPosition(1.0 - servoPosLeft); // inverted
 
-        // RPM from table
         double rpm = interpolate(distanceInches, DISTANCE_TO_RPM_TABLE);
         rpm = Math.max(MIN_RPM, Math.min(MAX_RPM, rpm));
 
@@ -100,7 +104,7 @@ public class Shooter {
         enabled = true;
     }
 
-    // Linear interpolation helper (used for both tables)
+    // Linear interpolation
     private double interpolate(double distance, double[][] table) {
         if (distance <= table[0][0]) return table[0][1];
         int len = table.length;
@@ -116,7 +120,7 @@ public class Shooter {
                 return v1 + t * (v2 - v1);
             }
         }
-        return table[0][1]; // fallback
+        return table[0][1];
     }
 
     /**
@@ -156,10 +160,10 @@ public class Shooter {
         angleServoRight.setPosition(1.0);
     }
 
-    // Physical angle estimation (for telemetry)
+    // Physical angle estimation
     public double getEstimatedAngleDegrees() {
         double pos = angleServoLeft.getPosition();
-        return pos * 5.0; // since your max is ~5°
+        return pos * 5.0;
     }
 
     // Helpers

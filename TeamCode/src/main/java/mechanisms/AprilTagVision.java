@@ -19,7 +19,7 @@ public class AprilTagVision {
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
 
-    // Adjustable: Camera position relative to robot center (inches)
+    // Camera position relative to robot center (inches)
     // Example: Camera 6" forward, 4" left, 8" up from robot center
     private final Position cameraPosition = new Position(DistanceUnit.INCH,
             0,  // x (right/left; positive right)
@@ -27,7 +27,7 @@ public class AprilTagVision {
             15.0,   // z (up/down; positive up)
             0);
 
-    // Adjustable: Camera orientation (degrees)
+    // Camera orientation (degrees)
     // Typical forward-facing horizontal camera: pitch = -90 (looking forward)
     // Yaw = 0 (forward), +90 left, -90 right, 180 backward
     private final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
@@ -37,14 +37,13 @@ public class AprilTagVision {
             0);
 
     public void init(HardwareMap hwMap) {
-        // Create AprilTag processor with camera pose for robot localization
         aprilTag = new AprilTagProcessor.Builder()
                 .setDrawAxes(true)
                 .setDrawCubeProjection(true)
                 .setDrawTagOutline(true)
-                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11) // default is usually fine
-                .setTagLibrary(AprilTagGameDatabase.getDecodeTagLibrary()) // default current season
-                .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES) // default
+                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                .setTagLibrary(AprilTagGameDatabase.getDecodeTagLibrary())
+                .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
                 .setCameraPose(cameraPosition, cameraOrientation)
                 // .setLensIntrinsics(fx, fy, cx, cy) // only if needed for custom calibration
                 .build();
@@ -53,9 +52,8 @@ public class AprilTagVision {
         //aprilTag.setDecimation(3); // default good balance
 
         VisionPortal.Builder builder = new VisionPortal.Builder();
-        builder.setCamera(hwMap.get(WebcamName.class, "Webcam 1")); // C270 HD Webcam
-        //builder.setCameraResolution(new Size(640, 480)); // optional, lower for speed
-        builder.enableLiveView(true); // helpful for debugging
+        builder.setCamera(hwMap.get(WebcamName.class, "Webcam 1"));
+        builder.enableLiveView(true);
         builder.addProcessor(aprilTag);
 
         visionPortal = builder.build();

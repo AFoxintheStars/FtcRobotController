@@ -25,6 +25,7 @@ public class VORTEXV2 extends OpMode {
     Shooter shooter = new Shooter();
     AprilTagAimer aprilTagAimer = new AprilTagAimer();
     private boolean lastBState = false;
+    private boolean lastAState = false;
 
     @Override
     public void init() {
@@ -47,17 +48,13 @@ public class VORTEXV2 extends OpMode {
 
         driveTrain.teleopDrive(forward, turn);
 
-        // ===== AIMING TOGGLE =====
-        boolean currentB = gamepad1.b;
-        if (currentB && !lastBState) {  // rising edge → toggle
-            aprilTagAimer.toggleAiming();
-        }
-        lastBState = currentB;
+        // ===== AIMING =====
+        aprilTagAimer.setAimingEnabled(gamepad1.x);
 
-        // ===== Aiming update (takes over turning when active) =====
+        // ===== Aiming update =====
         aprilTagAimer.update();
 
-        // Only apply manual turning if NOT aiming
+        // Only allow manual driving when NOT aiming
         if (!aprilTagAimer.aimingActive) {
             driveTrain.teleopDrive(forward, turn);
         }
@@ -66,23 +63,33 @@ public class VORTEXV2 extends OpMode {
         intake.controlIntake(gamepad1.right_bumper, gamepad1.left_bumper);
 
         // ===== CONVEYOR =====
-        if (gamepad1.y) {
+        if (gamepad2.x) {
             conveyor.forward();
-        } else if (gamepad1.a) {
+        } else if (gamepad2.y) {
             conveyor.reverse();
         } else {
             conveyor.stop();
         }
 
-        // ===== TURNTABLE PRESETS =====
-        if (gamepad2.x) {
-            turntable.goToAngle(0);
-        } else if (gamepad2.y) {
-            turntable.goToAngle(90);
-        } else if (gamepad2.b) {
-            turntable.goToAngle(180);
-        } else if (gamepad2.a) {
-            turntable.goToAngle(270);
+        // ===== TURNTABLE CONTROL =====
+
+        if (gamepad2.a && !lastAState) {
+            turntable.cycleToNextShooting();
+        }
+        lastAState = gamepad2.a;
+
+        if (gamepad2.b && !lastBState) {
+            turntable.cycleToNextIntake();
+        }
+        lastBState = gamepad2.b;
+
+        // ===== TURNTABLE MANUAL OVERRIDE (D-pad nudge) =====
+        if (gamepad2.dpad_right) {
+            turntable.nudgeLeft();
+        } else if (gamepad2.dpad_left) {
+            turntable.nudgeRight();
+        } else {
+            turntable.clearNudge();
         }
 
         // ===== APRIL TAG DETECTION =====
@@ -93,19 +100,19 @@ public class VORTEXV2 extends OpMode {
         telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
 
         // ===== SHOOTER & SERVO =====
-        double distanceMeters = 0;
+        double distanceInches = 0;
         boolean hasTarget = false;
 
-        for (AprilTagDetection detection : aprilTagVision.getDetections()) {
+        for (AprilTagDetection detection : detections) {
             if (detection.metadata != null && detection.ftcPose != null) {
-                distanceMeters = detection.ftcPose.range * 0.0254;
+                distanceInches = detection.ftcPose.range;
                 hasTarget = true;
                 break;
             }
         }
 
         if (gamepad1.x && hasTarget) {
-            shooter.aimFromDistanceInches(distanceMeters);
+            shooter.aimFromDistanceInches(distanceInches);
         } else {
             shooter.stop();
         }
@@ -120,7 +127,7 @@ public class VORTEXV2 extends OpMode {
         if (aprilTagAimer.aimingActive && aprilTagAimer.isFacingTag()) {
             telemetry.addLine("→ Robot is facing the AprilTag!");
         }
-        telemetry.addData("Distance in", "%.2f", distanceMeters);
+        telemetry.addData("Distance in", "%.2f", distanceInches);
         telemetry.addData("Angle", turntable.getCurrentAngle());
         telemetry.addData("Target", turntable.getTargetAngle());
         telemetry.addData("At Target", turntable.atTarget());
