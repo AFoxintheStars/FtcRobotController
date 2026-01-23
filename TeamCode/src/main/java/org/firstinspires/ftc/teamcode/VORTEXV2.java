@@ -1,10 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import mechanisms.Alliance;
 import mechanisms.AprilTagAimer;
 import mechanisms.AprilTagVision;
+import mechanisms.Climber;
 import mechanisms.Conveyor;
 import mechanisms.DriveTrain;
 import mechanisms.Intake;
@@ -16,6 +19,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import java.util.List;
 
 @TeleOp(name = "VORTEXV2")
+@Disabled
 public class VORTEXV2 extends OpMode {
     DriveTrain driveTrain = new DriveTrain();
     Intake intake = new Intake();
@@ -24,16 +28,19 @@ public class VORTEXV2 extends OpMode {
     AprilTagVision aprilTagVision = new AprilTagVision();
     Shooter shooter = new Shooter();
     AprilTagAimer aprilTagAimer = new AprilTagAimer();
+    Climber climber = new Climber();
     private boolean lastBState = false;
     private boolean lastAState = false;
 
     @Override
     public void init() {
+        // int tagId = (getAlliance() == Alliance.BLUE) ? 20 : 24;
+
         driveTrain.init(hardwareMap);
         intake.init(hardwareMap);
         conveyor.init(hardwareMap);
         turntable.init(hardwareMap);
-        aprilTagVision.init(hardwareMap);
+        // aprilTagVision.init(hardwareMap, tagId);
         shooter.init(hardwareMap);
         aprilTagAimer.init(hardwareMap, telemetry, driveTrain, aprilTagVision);
 
@@ -62,6 +69,9 @@ public class VORTEXV2 extends OpMode {
         // ===== INTAKE =====
         intake.controlIntake(gamepad1.right_bumper, gamepad1.left_bumper);
 
+        // ===== CLIMBER =====
+        climber.controlClimber(gamepad1.left_trigger, gamepad1.right_trigger);
+
         // ===== CONVEYOR =====
         if (gamepad2.x) {
             conveyor.forward();
@@ -83,19 +93,13 @@ public class VORTEXV2 extends OpMode {
         }
         lastBState = gamepad2.b;
 
-        // ===== TURNTABLE MANUAL OVERRIDE (D-pad nudge) =====
-        if (gamepad2.dpad_right) {
-            turntable.nudgeLeft();
-        } else if (gamepad2.dpad_left) {
-            turntable.nudgeRight();
-        } else {
-            turntable.clearNudge();
-        }
+        // ===== TURNTABLE MANUAL OVERRIDE =====
+        turntable.checkManualNudge(gamepad2.left_bumper, gamepad2.right_bumper);
 
         // ===== APRIL TAG DETECTION =====
 
         // AprilTag processing & telemetry
-        List<AprilTagDetection> detections = aprilTagVision.getDetections();
+        List<AprilTagDetection> detections = aprilTagVision.getAllianceDetections();
 
         telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
 
@@ -131,7 +135,8 @@ public class VORTEXV2 extends OpMode {
         telemetry.addData("Angle", turntable.getCurrentAngle());
         telemetry.addData("Target", turntable.getTargetAngle());
         telemetry.addData("At Target", turntable.atTarget());
-        telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
+        // telemetry.addData("Detected Tags", aprilTagVision.getNumDetections());
+        // telemetry.addData("Current Draw (A): ", intake.getCurrentDraw());
         telemetry.update();
 
     }

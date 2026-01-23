@@ -57,10 +57,10 @@ public class Shooter {
             { 80.0, 1900.0 },
             { 90.0, 1950.0 },
             { 100.0, 2000.0 },
-            { 110.0, 2050.0 },
-            { 120.0, 2100.0 },
-            { 125.0, 2150.0 },
-            { 130.0, 2200.0 }
+            { 110.0, 2100.0 },
+            { 120.0, 2150.0 },
+            { 125.0, 2200.0 },
+            { 130.0, 2250.0 }
     };
 
     public void init(HardwareMap hwMap) {
@@ -181,10 +181,10 @@ public class Shooter {
         telemetry.addData("Target RPM", "%.0f", targetRPMLeft);
         telemetry.addData("Left Current RPM", "%.0f", getCurrentRPMLeft());
         telemetry.addData("Right Current RPM", "%.0f", getCurrentRPMRight());
-        telemetry.addData("At Target?", isAtTarget() ? "YES" : "NO");
-        telemetry.addLine("Hood Servos:");
-        telemetry.addData("Left Pos", "%.3f", angleServoLeft.getPosition());
-        telemetry.addData("Right Pos", "%.3f", angleServoRight.getPosition());
-        telemetry.addData("Est. Launch Angle", "%.1f°", getEstimatedAngleDegrees());
+        // telemetry.addData("At Target?", isAtTarget() ? "YES" : "NO");
+        // telemetry.addLine("Hood Servos:");
+        // telemetry.addData("Left Pos", "%.3f", angleServoLeft.getPosition());
+        // telemetry.addData("Right Pos", "%.3f", angleServoRight.getPosition());
+        // telemetry.addData("Est. Launch Angle", "%.1f°", getEstimatedAngleDegrees());
     }
 }

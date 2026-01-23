@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -38,7 +39,7 @@ import com.qualcomm.robotcore.util.Range;
 
 
 @TeleOp(name="Vortex DECODE", group="TeleOp")
-//@Disabled
+@Disabled
 public class VORTEXV1 extends LinearOpMode {
 
     // Hardware

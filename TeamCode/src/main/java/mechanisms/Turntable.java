@@ -19,7 +19,7 @@ public class Turntable {
 
     private static final double DEADBAND = 1.0;
     // PID tuning
-    private static final double KP = 0.0035;   // Less oscillation
+    private static final double KP = 0.003;   // Less oscillation
     private static final double KI = 0.0005;   // Very small integral
     private static final double KD = 0.0005;   // Damping to stop stutter
     private static final double INTEGRAL_LIMIT = 0.2; // Anti-windup
@@ -46,10 +46,10 @@ public class Turntable {
     private double filteredAngle = 0.0;
     private static final double FILTER_ALPHA = 0.85;  // Higher = more smoothing
 
-    // Manual override (nudge) constants
-    private static final double NUDGE_STEP_DEG = 1.5;  // degrees per loop while held (~75°/sec at 50Hz)
-    private boolean nudgeLeft = false;
-    private boolean nudgeRight = false;
+    // Manual override constants
+    private static final double NUDGE_STEP_DEG = 5;
+    private boolean lastLeftBumper = false;
+    private boolean lastRightBumper = false;
 
     public void init(HardwareMap hwMap) {
         servo = hwMap.get(Servo.class, "turntable_servo");
@@ -80,18 +80,17 @@ public class Turntable {
         targetAngle = INTAKE_ANGLES[intakeIndex];
     }
 
-    // Manual override: call these from OpMode when D-pad is held
-    public void nudgeLeft() {
-        nudgeLeft = true;
-    }
+    public void checkManualNudge(boolean leftBumperPressed, boolean rightBumperPressed) {
+        if (leftBumperPressed && !lastLeftBumper) {
+            targetAngle = normalize(targetAngle - NUDGE_STEP_DEG);
+        }
 
-    public void nudgeRight() {
-        nudgeRight = true;
-    }
+        if (rightBumperPressed && !lastRightBumper) {
+            targetAngle = normalize(targetAngle + NUDGE_STEP_DEG);
+        }
 
-    public void clearNudge() {
-        nudgeLeft = false;
-        nudgeRight = false;
+        lastLeftBumper = leftBumperPressed;
+        lastRightBumper = rightBumperPressed;
     }
 
     public double getCurrentAngle() {
@@ -102,31 +101,19 @@ public class Turntable {
         return Math.abs(angleError(targetAngle, getCurrentAngle())) <= ANGLE_TOLERANCE;
     }
 
-    // Call every loop
     public void update() {
-        // Stronger filtering
         double raw = getRawAngle();
         filteredAngle = FILTER_ALPHA * filteredAngle + (1 - FILTER_ALPHA) * raw;
 
         double current = getCurrentAngle();
         double error = angleError(targetAngle, current);
 
-        // Manual override: small nudge to target if D-pad held
-        if (nudgeLeft) {
-            targetAngle = normalize(targetAngle - NUDGE_STEP_DEG);
-        }
-        if (nudgeRight) {
-            targetAngle = normalize(targetAngle + NUDGE_STEP_DEG);
-        }
-
-        // At target? Hold and reset integral
         if (Math.abs(error) <= ANGLE_TOLERANCE) {
             servo.setPosition(servo.getPosition());
             integral = 0.0;
             return;
         }
 
-        // Deadband: ignore tiny errors
         if (Math.abs(error) <= DEADBAND) {
             return;
         }
@@ -154,19 +141,16 @@ public class Turntable {
         lastTime = now;
     }
 
-    // Raw unfiltered angle
     private double getRawAngle() {
         return (feedback.getVoltage() / MAX_VOLTAGE) * TOTAL_DEGREES;
     }
 
-    // Normalize to [0, TOTAL_DEGREES)
     private double normalize(double angle) {
         angle %= TOTAL_DEGREES;
         if (angle < 0) angle += TOTAL_DEGREES;
         return angle;
     }
 
-    // Shortest error (positive or negative)
     private double angleError(double target, double current) {
         double error = target - current;
         error = (error + TOTAL_DEGREES/2) % TOTAL_DEGREES - TOTAL_DEGREES/2;

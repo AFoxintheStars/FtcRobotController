@@ -14,10 +14,10 @@ public class AprilTagAimer {
     private Telemetry telemetry;
 
     // PID constants - tune these!
-    private static final double KP = 0.06;   // Proportional - how aggressively it turns
+    private static final double KP = 0.055;   // Proportional - how aggressively it turns
     private static final double KI = 0.000;
     private static final double KD = 0.002;   // Derivative
-    private static final double BEARING_TOLERANCE_DEG = 2.0;
+    private static final double BEARING_TOLERANCE_DEG = 1.0;
 
     // PID state
     private double integral = 0.0;
@@ -98,7 +98,7 @@ public class AprilTagAimer {
     }
 
     private double getTagBearing() {
-        List<AprilTagDetection> detections = aprilTagVision.getDetections();
+        List<AprilTagDetection> detections = aprilTagVision.getAllianceDetections();
         for (AprilTagDetection detection : detections) {
             if (detection.metadata != null && detection.ftcPose != null) {
                 return detection.ftcPose.bearing;

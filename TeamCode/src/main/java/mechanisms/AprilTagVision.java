@@ -12,12 +12,14 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AprilTagVision {
 
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
+    private int targetTagId = -1;
 
     // Camera position relative to robot center (inches)
     // Example: Camera 6" forward, 4" left, 8" up from robot center
@@ -36,7 +38,9 @@ public class AprilTagVision {
             0.0,   // roll
             0);
 
-    public void init(HardwareMap hwMap) {
+    public void init(HardwareMap hwMap, int targetTagId) {
+        this.targetTagId = targetTagId;
+
         aprilTag = new AprilTagProcessor.Builder()
                 .setDrawAxes(true)
                 .setDrawCubeProjection(true)
@@ -51,10 +55,10 @@ public class AprilTagVision {
         // Optional: Tune decimation for range vs speed trade-off
         //aprilTag.setDecimation(3); // default good balance
 
-        VisionPortal.Builder builder = new VisionPortal.Builder();
-        builder.setCamera(hwMap.get(WebcamName.class, "Webcam 1"));
-        builder.enableLiveView(true);
-        builder.addProcessor(aprilTag);
+        VisionPortal.Builder builder = new VisionPortal.Builder()
+        .setCamera(hwMap.get(WebcamName.class, "Webcam 1"))
+        .enableLiveView(true)
+        .addProcessor(aprilTag);
 
         visionPortal = builder.build();
     }
@@ -62,33 +66,21 @@ public class AprilTagVision {
     /**
      * Get all current AprilTag detections.
      */
-    public List<AprilTagDetection> getDetections() {
-        return aprilTag.getDetections();
+    public List<AprilTagDetection> getAllianceDetections() {
+        List<AprilTagDetection> filtered = new ArrayList<>();
+        for (AprilTagDetection d : aprilTag.getDetections()) {
+            if (d.id == targetTagId) {
+                filtered.add(d);
+            }
+        }
+        return filtered;
     }
 
     /**
      * Get number of detected tags.
      */
     public int getNumDetections() {
-        return getDetections().size();
-    }
-
-    /**
-     * Stop camera streaming to save CPU (call when not needed).
-     */
-    public void stopStreaming() {
-        if (visionPortal != null) {
-            visionPortal.stopStreaming();
-        }
-    }
-
-    /**
-     * Resume streaming.
-     */
-    public void resumeStreaming() {
-        if (visionPortal != null) {
-            visionPortal.resumeStreaming();
-        }
+        return getAllianceDetections().size();
     }
 
     /**
@@ -98,27 +90,5 @@ public class AprilTagVision {
         if (visionPortal != null) {
             visionPortal.close();
         }
-    }
-
-    // Get robot global position from first valid detection (inches)
-    public Position getRobotPosition() {
-        List<AprilTagDetection> detections = getDetections();
-        for (AprilTagDetection detection : detections) {
-            if (detection.metadata != null && detection.robotPose != null) {
-                return detection.robotPose.getPosition();
-            }
-        }
-        return null;
-    }
-
-    // Get robot global heading/yaw (degrees)
-    public Double getRobotYaw() {
-        List<AprilTagDetection> detections = getDetections();
-        for (AprilTagDetection detection : detections) {
-            if (detection.metadata != null && detection.robotPose != null) {
-                return detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES);
-            }
-        }
-        return null;
     }
 }

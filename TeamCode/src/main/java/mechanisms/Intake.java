@@ -14,11 +14,11 @@ public class Intake {
     private static final double IDLE_POWER = 0.0;
 
     // ===== CURRENT LIMIT SETTINGS =====
-    private static final double WARNING_CURRENT_AMPS = 5.5;
-    private static final double MAX_CURRENT_AMPS = 7.0;
+    private static final double WARNING_CURRENT_AMPS = 7.0;
+    private static final double MAX_CURRENT_AMPS = 9.0;
 
     // Power reduction when overloaded
-    private static final double REDUCED_POWER_SCALE = 0.4;
+    private static final double REDUCED_POWER_SCALE = 0.15;
 
     public void init(HardwareMap hwMap) {
         intakeMotor = hwMap.get(DcMotorEx.class, "intake_motor");
