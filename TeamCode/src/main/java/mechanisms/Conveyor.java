@@ -34,11 +34,11 @@ public class Conveyor {
     // ===== CONTROL METHODS =====
 
     public void forward() {
-        conveyorMotor.setVelocity(TARGET_TICKS_PER_SEC);
+        conveyorMotor.setVelocity(-TARGET_TICKS_PER_SEC);
     }
 
     public void reverse() {
-        conveyorMotor.setVelocity(-TARGET_TICKS_PER_SEC);
+        conveyorMotor.setVelocity(TARGET_TICKS_PER_SEC);
     }
 
     public void stop() {

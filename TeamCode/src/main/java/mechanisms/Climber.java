@@ -11,19 +11,18 @@ public class Climber {
     private DcMotor leftClimber;
     private DcMotor rightClimber;
 
-    // Adjustable constants
-    private static final double CLIMB_POWER = 1.0;
-    private static final double DESCEND_POWER = -0.8;
-    private static final double DEADZONE = 0.1;
+    private static final double DEADZONE = 0.05;
 
-    private boolean climbingAllowed = false;
+    // Direction state
+    private boolean descending = false;
+    private boolean lastBackState = false;
 
     public void init(HardwareMap hwMap) {
         leftClimber = hwMap.get(DcMotor.class, "climber_left");
         rightClimber = hwMap.get(DcMotor.class, "climber_right");
 
         leftClimber.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightClimber.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightClimber.setDirection(DcMotorSimple.Direction.FORWARD);
 
         leftClimber.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightClimber.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -35,62 +34,39 @@ public class Climber {
     }
 
     /**
-     * Main control method - call every loop
-     * @param leftTrigger  left trigger value [0..1]
-     * @param rightTrigger right trigger value [0..1]
+     * Independent climber control
      */
-    public void controlClimber(double leftTrigger, double rightTrigger) {
-        if (!climbingAllowed) {
-            stop();
-            return;
-        }
+    public void controlClimber(double leftTrigger,
+                               double rightTrigger,
+                               boolean backButton) {
 
-        double leftPower = 0.0;
-        double rightPower = 0.0;
+        if (backButton && !lastBackState) {
+            descending = !descending;
+        }
+        lastBackState = backButton;
 
-        if (leftTrigger > DEADZONE) {
-            leftPower = CLIMB_POWER;
-            rightPower = CLIMB_POWER;
-        }
-        else if (rightTrigger > DEADZONE) {
-            leftPower = DESCEND_POWER;
-            rightPower = DESCEND_POWER;
-        }
+        double directionMultiplier = descending ? -1.0 : 1.0;
+
+        double leftPower = (leftTrigger > DEADZONE)
+                ? leftTrigger * directionMultiplier
+                : 0.0;
+
+        double rightPower = (rightTrigger > DEADZONE)
+                ? rightTrigger * directionMultiplier
+                : 0.0;
 
         leftClimber.setPower(leftPower);
         rightClimber.setPower(rightPower);
     }
 
-    /**
-     * Emergency stop / default state
-     */
     public void stop() {
         leftClimber.setPower(0.0);
         rightClimber.setPower(0.0);
     }
 
-    /**
-     * Call this at the start of endgame / when climbing is allowed
-     * (e.g., when timer reaches 90 seconds remaining)
-     */
-    public void enableClimbing() {
-        climbingAllowed = true;
-    }
-
-    /**
-     * Call this to disable climbing (safety during normal match)
-     */
-    public void disableClimbing() {
-        climbingAllowed = false;
-        stop();
-    }
-
-    /**
-     * Optional: for telemetry/debug
-     */
     public void addTelemetry(Telemetry telemetry) {
-        telemetry.addData("Climber Allowed", climbingAllowed ? "YES" : "NO (match mode)");
-        telemetry.addData("Left Climber Power", "%.2f", leftClimber.getPower());
-        telemetry.addData("Right Climber Power", "%.2f", rightClimber.getPower());
+        telemetry.addData("Climber Mode", descending ? "DESCEND" : "CLIMB");
+        telemetry.addData("Left Power", "%.2f", leftClimber.getPower());
+        telemetry.addData("Right Power", "%.2f", rightClimber.getPower());
     }
 }

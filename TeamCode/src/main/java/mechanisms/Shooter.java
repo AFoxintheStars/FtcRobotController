@@ -151,6 +151,11 @@ public class Shooter {
                 Math.abs(getCurrentRPMRight() - targetRPMRight) < tolerance;
     }
 
+    public boolean isReadyToFire() {
+        return enabled && isAtTarget();
+    }
+
+
     public void stop() {
         enabled = false;
         targetRPMLeft = targetRPMRight = IDLE_RPM;

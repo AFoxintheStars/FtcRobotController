@@ -62,29 +62,27 @@ public abstract class VORTEXV2_Base extends OpMode {
         intake.controlIntake(gamepad1.right_bumper, gamepad1.left_bumper);
 
         // ===== CONVEYOR =====
-        if (gamepad2.x) {
-            conveyor.forward();
-        } else if (gamepad2.y) {
+        if (turntable.isMoving()) {
             conveyor.reverse();
-        } else {
+        }
+        else if (gamepad2.y) {
+            conveyor.forward();
+        }
+        else if (gamepad2.x) {
+            conveyor.reverse();
+        }
+        else {
             conveyor.stop();
         }
 
         // ===== CLIMBER =====
-        climber.controlClimber(gamepad1.left_trigger, gamepad1.right_trigger);
+        climber.controlClimber(
+                gamepad1.left_trigger,
+                gamepad1.right_trigger,
+                gamepad1.back);
 
         // ===== TURNTABLE =====
-        if (gamepad2.a && !lastA) {
-            turntable.cycleToNextShooting();
-        }
-        if (gamepad2.b && !lastB) {
-            turntable.cycleToNextIntake();
-        }
-        lastA = gamepad2.a;
-        lastB = gamepad2.b;
-
-        turntable.checkManualNudge(gamepad2.left_bumper, gamepad2.right_bumper);
-        turntable.update();
+        turntable.handleManualControl(gamepad2.left_bumper, gamepad2.right_bumper);
 
         // ===== APRILTAG DISTANCE =====
         double distance = 0;
@@ -109,12 +107,10 @@ public abstract class VORTEXV2_Base extends OpMode {
         shooter.update();
 
         // ===== TELEMETRY =====
+        shooter.addTelemetry(telemetry);
         telemetry.addData("Alliance", getAlliance());
         telemetry.addData("AprilTags Seen", detections.size());
-        telemetry.addData("Distance (in)", "%.1f", distance);
-        telemetry.addData("Turntable Angle", "%.1f", turntable.getCurrentAngle());
-        telemetry.addData("Turntable Target", "%.1f", turntable.getTargetAngle());
-        telemetry.addData("Turntable At Target", turntable.atTarget());
+        // telemetry.addData("Distance (in)", "%.1f", distance);
         telemetry.update();
     }
 
