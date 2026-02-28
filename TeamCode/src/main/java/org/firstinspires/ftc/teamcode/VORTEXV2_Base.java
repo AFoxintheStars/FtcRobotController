@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Gamepad;
 
 import mechanisms.*;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -21,8 +22,8 @@ public abstract class VORTEXV2_Base extends OpMode {
     protected AprilTagAimer aprilTagAimer = new AprilTagAimer();
     protected Climber climber = new Climber();
 
-    private boolean lastA = false;
-    private boolean lastB = false;
+    private boolean singleDriverMode = false;
+    private boolean lastStart = false;
 
     @Override
     public void init() {
@@ -45,6 +46,16 @@ public abstract class VORTEXV2_Base extends OpMode {
 
     @Override
     public void loop() {
+        // SINGLE DRIVER MODE
+        boolean startPressed = gamepad1.start;
+
+        if (startPressed && !lastStart) {
+            singleDriverMode = !singleDriverMode;
+        }
+
+        lastStart = startPressed;
+
+        Gamepad operator = singleDriverMode ? gamepad1 : gamepad2;
 
         // ===== DRIVETRAIN =====
         double forward = gamepad1.left_stick_y;
@@ -65,10 +76,10 @@ public abstract class VORTEXV2_Base extends OpMode {
         if (turntable.isMoving()) {
             conveyor.reverse();
         }
-        else if (gamepad2.y) {
+        else if (operator.dpad_up) {
             conveyor.forward();
         }
-        else if (gamepad2.x) {
+        else if (operator.dpad_down) {
             conveyor.reverse();
         }
         else {
@@ -82,7 +93,7 @@ public abstract class VORTEXV2_Base extends OpMode {
                 gamepad1.back);
 
         // ===== TURNTABLE =====
-        turntable.handleManualControl(gamepad2.left_bumper, gamepad2.right_bumper);
+        turntable.handleManualControl(operator.dpad_left, operator.dpad_right);
 
         // ===== APRILTAG DISTANCE =====
         double distance = 0;
@@ -98,8 +109,12 @@ public abstract class VORTEXV2_Base extends OpMode {
         }
 
         // ===== SHOOTER =====
-        if (gamepad1.y && hasTarget) {
-            shooter.aimFromDistanceInches(distance);
+        if (gamepad1.y) {
+            if (hasTarget) {
+                shooter.aimFromDistanceInches(distance);
+            } else {
+                shooter.aimDefault();  // fallback mode
+            }
         } else {
             shooter.stop();
         }

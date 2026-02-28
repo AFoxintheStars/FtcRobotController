@@ -35,6 +35,10 @@ public class Shooter {
     private double targetRPMRight = IDLE_RPM;
     private boolean enabled = false;
 
+    // DEFAULTS
+    private static final double DEFAULT_RPM = 1850.0;
+    private static final double DEFAULT_SERVO_POS = 0.03;
+
     // === DISTANCE TO HOOD ANGLE SERVO POSITION
     private static final double[][] DISTANCE_TO_ANGLE_TABLE = {
             { 12.0, 0.00 },
@@ -62,6 +66,14 @@ public class Shooter {
             { 125.0, 2200.0 },
             { 130.0, 2250.0 }
     };
+
+    public void aimDefault() {
+        angleServoLeft.setPosition(DEFAULT_SERVO_POS);
+        angleServoRight.setPosition(1.0 - DEFAULT_SERVO_POS);
+
+        targetRPMLeft = targetRPMRight = DEFAULT_RPM;
+        enabled = true;
+    }
 
     public void init(HardwareMap hwMap) {
         flywheelLeft = hwMap.get(DcMotorEx.class, "shooter_left");
